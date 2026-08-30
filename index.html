@@ -17,6 +17,7 @@
 
   <header class="bg-white shadow-sm sticky top-0 z-40 px-4 py-3 flex justify-between items-center">
     <div class="flex items-center gap-2">
+      <!-- رسومات SVG سلة الفاكهة -->
       <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M6 14L9 26H23L26 14H6Z" fill="#D97706" stroke="#B45309" stroke-width="1.5" stroke-linejoin="round"/>
         <path d="M8 18H24M10 22H22" stroke="#B45309" stroke-width="1" stroke-linecap="round"/>
@@ -109,14 +110,14 @@
   </div>
 
   <script>
-    // استخدام المتغيرات البيئية أو القيم الافتراضية
+    // إعدادات فايربيس المباشرة لتعمل بسلاسة على فيرسل
     const firebaseConfig = {
-      apiKey: window.env?.FIREBASE_API_KEY || "PLACEHOLDER_API_KEY",
-      authDomain: window.env?.FIREBASE_AUTH_DOMAIN || "PLACEHOLDER_AUTH_DOMAIN",
-      projectId: window.env?.FIREBASE_PROJECT_ID || "PLACEHOLDER_PROJECT_ID",
-      storageBucket: window.env?.FIREBASE_STORAGE_BUCKET || "PLACEHOLDER_STORAGE_BUCKET",
-      messagingSenderId: window.env?.FIREBASE_MESSAGING_SENDER_ID || "PLACEHOLDER_SENDER_ID",
-      appId: window.env?.FIREBASE_APP_ID || "PLACEHOLDER_APP_ID"
+      apiKey: "AIzaSyAKQt1UTGkUsx043cdzeu9qY4hL9f6yU-w",
+      authDomain: "sla-fruit.firebaseapp.com",
+      projectId: "sla-fruit",
+      storageBucket: "sla-fruit.firebasestorage.app",
+      messagingSenderId: "49013439224",
+      appId: "1:49013439224:web:2537c25a78214f714dd90d"
     };
 
     firebase.initializeApp(firebaseConfig);
