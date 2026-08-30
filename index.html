@@ -12,15 +12,23 @@
 </head>
 <body class="min-h-screen pb-20">
 
-  <!-- شريط التنقل العلوي (خالٍ تماماً لأي زيارة جديدة، ويظهر فقط للمالك) -->
+  <!-- شريط التنقل العلوي (خالٍ تماماً للزوار، ويظهر فقط للمالك) -->
   <header class="bg-white shadow-sm sticky top-0 z-40 px-4 py-3 flex justify-between items-center">
-    <div class="flex items-center gap-2 cursor-pointer select-none" onclick="handleLogoClick()" title="متجر الفواكه والخضار">
-      <span class="text-2xl">🍏</span>
-      <h1 class="font-black text-xl text-emerald-600">متجري الطازج</h1>
+    <div class="flex items-center gap-2">
+      <!-- رسمة SVG سلة الفاكهة -->
+      <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6 14L9 26H23L26 14H6Z" fill="#D97706" stroke="#B45309" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M8 18H24M10 22H22" stroke="#B45309" stroke-width="1" stroke-linecap="round"/>
+        <path d="M10 14C10 9 12 6 16 6C20 6 22 9 22 14" stroke="#B45309" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="13" cy="11" r="3.5" fill="#EF4444"/>
+        <circle cx="19" cy="10" r="3" fill="#F59E0B"/>
+        <circle cx="16" cy="12" r="2.5" fill="#10B981"/>
+      </svg>
+      <h1 class="font-black text-xl text-emerald-600">سلة الفاكهة</h1>
     </div>
-    <!-- حاوية أزرار المالك التي تظهر حصرياً للمالك المسجل الدخول -->
+    
+    <!-- أزرار التحكم الخاصة بالمالك فقط -->
     <div id="ownerControlsContainer" class="flex items-center gap-2">
-      <!-- يتم حقن الأزرار هنا برمجياً -->
     </div>
   </header>
 
@@ -35,7 +43,7 @@
     </div>
   </main>
 
-  <!-- نافذة تفاصيل المنتج للزوان -->
+  <!-- نافذة تفاصيل المنتج -->
   <div id="productDetailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl p-5 relative shadow-2xl">
       <button onclick="closeProductDetail()" class="absolute top-3 left-3 text-gray-400 font-bold text-lg">✕</button>
@@ -44,7 +52,7 @@
     </div>
   </div>
 
-  <!-- نافذة تسجيل الدخول المخفية (تفتح فقط عند النقر 3 مرات متتالية على اسم أو شعار المتجر) -->
+  <!-- نافذة تسجيل الدخول المخفية (تفتح حصرياً عبر رابط الـ Admin السري) -->
   <div id="loginModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 relative shadow-xl">
       <button onclick="closeLoginModal()" class="absolute top-4 left-4 text-gray-400 font-bold text-lg">✕</button>
@@ -64,7 +72,7 @@
     </div>
   </div>
 
-  <!-- لوحة التحكم الخاصة بالمالك -->
+  <!-- لوحة التحكم -->
   <div id="adminPanelModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-lg rounded-2xl p-6 relative max-h-[90vh] overflow-y-auto shadow-2xl">
       <button onclick="toggleAdminPanel()" class="absolute top-4 left-4 text-gray-400 font-bold text-lg">✕</button>
@@ -106,32 +114,32 @@
     let products = JSON.parse(localStorage.getItem('my_store_products')) || [];
     let isAdminLoggedIn = localStorage.getItem('is_admin_logged') === 'true';
 
-    // عداد للنقر السريع على الشعار لفتح نافذة تسجيل الدخول للمالك بسرية تامّة
-    let logoClickCount = 0;
-    let logoClickTimer = null;
-
-    function handleLogoClick() {
-      if (isAdminLoggedIn) return; // إذا كان مسجلاً بالفعل، لا يفعل شيئاً عند النقر على الشعار
-      logoClickCount++;
-      if (logoClickCount === 3) {
-        logoClickCount = 0;
-        clearTimeout(logoClickTimer);
-        openLoginModal();
-      } else {
-        clearTimeout(logoClickTimer);
-        logoClickTimer = setTimeout(() => {
-          logoClickCount = 0;
-        }, 600);
-      }
-    }
-
     window.onload = function() {
+      checkSecretAdminAccess();
       updateAuthUI();
       renderStoreProducts();
     };
 
-    function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
-    function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+    // الطريقة الاحترافية المخفية تماماً: التحقق من الرابط السري (مثال: yoursite.com/#admin)
+    function checkSecretAdminAccess() {
+      if (window.location.hash === '#admin') {
+        if (isAdminLoggedIn) {
+          toggleAdminPanel();
+        } else {
+          openLoginModal();
+        }
+      }
+    }
+
+    function openLoginModal() { document.getElementById('loginModal').classList.add('flex'); document.getElementById('loginModal').classList.remove('hidden'); }
+    function closeLoginModal() { 
+      document.getElementById('loginModal').classList.remove('flex'); 
+      document.getElementById('loginModal').classList.add('hidden'); 
+      // إزالة الهاش من الرابط لتنظيفه
+      if(window.location.hash === '#admin') {
+        history.pushState("", document.title, window.location.pathname + window.location.search);
+      }
+    }
 
     function checkAdminLogin() {
       const emailInput = document.getElementById('loginEmail').value.trim();
@@ -154,6 +162,8 @@
       localStorage.removeItem('is_admin_logged');
       updateAuthUI();
       toggleAdminPanel();
+      // إزالة الهاش عند الخروج
+      history.pushState("", document.title, window.location.pathname + window.location.search);
       alert('تم تسجيل الخروج من لوحة التحكم.');
     }
 
@@ -161,7 +171,6 @@
       const container = document.getElementById('ownerControlsContainer');
 
       if (isAdminLoggedIn) {
-        // تظهر الأيقونات والزرين حصرياً للمالك تماماً كما طلبت وفي الصورة
         container.innerHTML = `
           <button onclick="toggleAdminPanel()" class="bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-800 transition flex items-center gap-1">
             <span>⚙️</span> لوحة التحكم
@@ -171,15 +180,18 @@
           </button>
         `;
       } else {
-        // لأي شخص جديد يزور الموقع: تكون الحاوية فارغة تماماً ولا تظهر أي أيقونات أو أزرار خاصة بالإدارة أو تسجيل الدخول
         container.innerHTML = '';
       }
     }
 
     function toggleAdminPanel() {
-      if (!isAdminLoggedIn) return;
+      if (!isAdminLoggedIn) {
+        openLoginModal();
+        return;
+      }
       const modal = document.getElementById('adminPanelModal');
       modal.classList.toggle('hidden');
+      modal.classList.toggle('flex');
       if (!modal.classList.contains('hidden')) {
         renderAdminList();
       }
@@ -273,9 +285,11 @@
       `;
 
       document.getElementById('productDetailModal').classList.remove('hidden');
+      document.getElementById('productDetailModal').classList.add('flex');
     }
 
     function closeProductDetail() {
+      document.getElementById('productDetailModal').classList.remove('flex');
       document.getElementById('productDetailModal').classList.add('hidden');
     }
 
