@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>متجر الفواكه والخضار</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Tajawal', sans-serif; background: #f4f6f8; }
+  </style>
+</head>
+<body class="min-h-screen pb-20">
+
+  <!-- شريط التنقل العلوي (خالٍ تماماً لأي زيارة جديدة، ويظهر فقط للمالك) -->
+  <header class="bg-white shadow-sm sticky top-0 z-40 px-4 py-3 flex justify-between items-center">
+    <div class="flex items-center gap-2 cursor-pointer select-none" onclick="handleLogoClick()" title="متجر الفواكه والخضار">
+      <span class="text-2xl">🍏</span>
+      <h1 class="font-black text-xl text-emerald-600">متجري الطازج</h1>
+    </div>
+    <!-- حاوية أزرار المالك التي تظهر حصرياً للمالك المسجل الدخول -->
+    <div id="ownerControlsContainer" class="flex items-center gap-2">
+      <!-- يتم حقن الأزرار هنا برمجياً -->
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto p-4">
+    <div class="mb-4">
+      <input type="text" placeholder="ابحث في المنتجات..." class="w-full p-3 bg-white rounded-xl shadow-sm border border-gray-200 outline-none focus:border-emerald-500 text-sm">
+    </div>
+
+    <h2 class="font-black text-base mb-3 text-gray-800">قائمة المنتجات المتوفرة</h2>
+    
+    <div id="productsGrid" class="grid grid-cols-2 gap-3">
+    </div>
+  </main>
+
+  <!-- نافذة تفاصيل المنتج للزوان -->
+  <div id="productDetailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-5 relative shadow-2xl">
+      <button onclick="closeProductDetail()" class="absolute top-3 left-3 text-gray-400 font-bold text-lg">✕</button>
+      <div id="detailContent">
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة تسجيل الدخول المخفية (تفتح فقط عند النقر 3 مرات متتالية على اسم أو شعار المتجر) -->
+  <div id="loginModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6 relative shadow-xl">
+      <button onclick="closeLoginModal()" class="absolute top-4 left-4 text-gray-400 font-bold text-lg">✕</button>
+      <h3 class="text-lg font-black mb-4 text-center text-gray-800">تسجيل دخول المالك</h3>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-bold text-gray-600 block mb-1">البريد الإلكتروني:</label>
+          <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-gray-600 block mb-1">كلمة المرور:</label>
+          <input type="password" id="loginPassword" placeholder="كلمة المرور" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-500">
+        </div>
+        <button onclick="checkAdminLogin()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow-md mt-2">دخول لوحة التحكم</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- لوحة التحكم الخاصة بالمالك -->
+  <div id="adminPanelModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl p-6 relative max-h-[90vh] overflow-y-auto shadow-2xl">
+      <button onclick="toggleAdminPanel()" class="absolute top-4 left-4 text-gray-400 font-bold text-lg">✕</button>
+      <h3 class="text-xl font-black mb-4 text-emerald-600 border-b pb-2">لوحة التحكم وإدارة المنتجات</h3>
+
+      <div class="bg-emerald-50/60 p-4 rounded-xl mb-6 border border-emerald-100">
+        <h4 class="font-bold text-sm text-emerald-800 mb-3">➕ إضافة منتج جديد مع السعر والوزن</h4>
+        <div class="space-y-3">
+          <input type="text" id="pName" placeholder="اسم المنتج (مثال: تفاح طازج)" class="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none">
+          <input type="text" id="pDesc" placeholder="وصف المنتج (مثال: حلو ولذيذ درجة أولى)" class="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none">
+          
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="pPrice" placeholder="السعر (مثال: 2000 د.ع)" class="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none">
+            <input type="text" id="pWeight" placeholder="الوزن أو الحجم (مثال: 1 كغ)" class="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none">
+          </div>
+
+          <input type="text" id="pUnit" placeholder="وحدة البيع (كيلو / حبة / صندوق)" class="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none">
+          
+          <div>
+            <label class="text-xs font-bold text-gray-600 block mb-1">اختر صورة المنتج من جهازك:</label>
+            <input type="file" id="pImageFile" accept="image/*" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+          </div>
+
+          <button onclick="addNewProduct()" class="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-bold text-sm shadow">حفظ وإضافة المنتج للمتجر</button>
+        </div>
+      </div>
+
+      <h4 class="font-bold text-sm text-gray-800 mb-2">📦 المنتجات الحالية في المتجر</h4>
+      <div id="adminProductsList" class="space-y-2">
+      </div>
+      
+      <div class="mt-6 pt-4 border-t flex justify-end">
+        <button onclick="logoutAdmin()" class="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-xs font-bold">تسجيل خروج المدير</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let products = JSON.parse(localStorage.getItem('my_store_products')) || [];
+    let isAdminLoggedIn = localStorage.getItem('is_admin_logged') === 'true';
+
+    // عداد للنقر السريع على الشعار لفتح نافذة تسجيل الدخول للمالك بسرية تامّة
+    let logoClickCount = 0;
+    let logoClickTimer = null;
+
+    function handleLogoClick() {
+      if (isAdminLoggedIn) return; // إذا كان مسجلاً بالفعل، لا يفعل شيئاً عند النقر على الشعار
+      logoClickCount++;
+      if (logoClickCount === 3) {
+        logoClickCount = 0;
+        clearTimeout(logoClickTimer);
+        openLoginModal();
+      } else {
+        clearTimeout(logoClickTimer);
+        logoClickTimer = setTimeout(() => {
+          logoClickCount = 0;
+        }, 600);
+      }
+    }
+
+    window.onload = function() {
+      updateAuthUI();
+      renderStoreProducts();
+    };
+
+    function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+    function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+
+    function checkAdminLogin() {
+      const emailInput = document.getElementById('loginEmail').value.trim();
+      const passInput = document.getElementById('loginPassword').value.trim();
+
+      if (emailInput === 'sydwbydw@gmail.com' && passInput === 'sla@#1234') {
+        isAdminLoggedIn = true;
+        localStorage.setItem('is_admin_logged', 'true');
+        closeLoginModal();
+        updateAuthUI();
+        toggleAdminPanel();
+        alert('مرحباً بك يا مالك المتجر، تم فتح لوحة التحكم بنجاح.');
+      } else {
+        alert('البيانات غير صحيحة! هذا الحساب مخصص للمالك فقط.');
+      }
+    }
+
+    function logoutAdmin() {
+      isAdminLoggedIn = false;
+      localStorage.removeItem('is_admin_logged');
+      updateAuthUI();
+      toggleAdminPanel();
+      alert('تم تسجيل الخروج من لوحة التحكم.');
+    }
+
+    function updateAuthUI() {
+      const container = document.getElementById('ownerControlsContainer');
+
+      if (isAdminLoggedIn) {
+        // تظهر الأيقونات والزرين حصرياً للمالك تماماً كما طلبت وفي الصورة
+        container.innerHTML = `
+          <button onclick="toggleAdminPanel()" class="bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-800 transition flex items-center gap-1">
+            <span>⚙️</span> لوحة التحكم
+          </button>
+          <button onclick="logoutAdmin()" class="bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-800 transition">
+            حساب المالك (متصل)
+          </button>
+        `;
+      } else {
+        // لأي شخص جديد يزور الموقع: تكون الحاوية فارغة تماماً ولا تظهر أي أيقونات أو أزرار خاصة بالإدارة أو تسجيل الدخول
+        container.innerHTML = '';
+      }
+    }
+
+    function toggleAdminPanel() {
+      if (!isAdminLoggedIn) return;
+      const modal = document.getElementById('adminPanelModal');
+      modal.classList.toggle('hidden');
+      if (!modal.classList.contains('hidden')) {
+        renderAdminList();
+      }
+    }
+
+    function addNewProduct() {
+      const name = document.getElementById('pName').value.trim();
+      const desc = document.getElementById('pDesc').value.trim();
+      const price = document.getElementById('pPrice').value.trim();
+      const weight = document.getElementById('pWeight').value.trim();
+      const unit = document.getElementById('pUnit').value.trim();
+      const fileInput = document.getElementById('pImageFile');
+
+      if (!name || !price || !unit) {
+        alert('يرجى كتابة اسم المنتج، السعر، ووحدة البيع على الأقل.');
+        return;
+      }
+
+      if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          saveNewProductData(name, desc, price, weight, unit, e.target.result);
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        saveNewProductData(name, desc, price, weight, unit, 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=400&q=80');
+      }
+    }
+
+    function saveNewProductData(name, desc, price, weight, unit, imageSrc) {
+      const newProduct = {
+        id: Date.now(),
+        name,
+        desc: desc || 'طازج وعالي الجودة',
+        price,
+        weight: weight || 'غير محدد',
+        unit,
+        image: imageSrc
+      };
+
+      products.push(newProduct);
+      localStorage.setItem('my_store_products', JSON.stringify(products));
+      
+      document.getElementById('pName').value = '';
+      document.getElementById('pDesc').value = '';
+      document.getElementById('pPrice').value = '';
+      document.getElementById('pWeight').value = '';
+      document.getElementById('pUnit').value = '';
+      document.getElementById('pImageFile').value = '';
+
+      renderStoreProducts();
+      renderAdminList();
+      alert('تمت إضافة المنتج بنجاح إلى المتجر!');
+    }
+
+    function deleteProduct(id) {
+      if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+        products = products.filter(p => p.id !== id);
+        localStorage.setItem('my_store_products', JSON.stringify(products));
+        renderStoreProducts();
+        renderAdminList();
+      }
+    }
+
+    function openProductDetail(id) {
+      const p = products.find(item => item.id === id);
+      if (!p) return;
+
+      const detailContent = document.getElementById('detailContent');
+      detailContent.innerHTML = `
+        <img src="${p.image}" class="w-full h-40 object-cover rounded-xl mb-3 bg-gray-50">
+        <h3 class="font-black text-lg text-gray-800 mb-1">${p.name}</h3>
+        <p class="text-xs text-gray-500 mb-3">${p.desc}</p>
+        
+        <div class="bg-emerald-50 p-3 rounded-xl space-y-2 mb-4 border border-emerald-100">
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-gray-600 font-medium">السعر:</span>
+            <span class="font-black text-emerald-700 text-base">${p.price}</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-gray-600">الوزن / الحجم:</span>
+            <span class="font-bold text-gray-800">${p.weight}</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-gray-600">وحدة البيع:</span>
+            <span class="font-bold text-gray-800">${p.unit}</span>
+          </div>
+        </div>
+
+        <button onclick="closeProductDetail(); alert('تمت إضافة المنتج إلى السلة');" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold text-sm shadow-sm hover:bg-emerald-700 transition">إضافة للسلة +</button>
+      `;
+
+      document.getElementById('productDetailModal').classList.remove('hidden');
+    }
+
+    function closeProductDetail() {
+      document.getElementById('productDetailModal').classList.add('hidden');
+    }
+
+    function renderStoreProducts() {
+      const grid = document.getElementById('productsGrid');
+      
+      if (products.length === 0) {
+        grid.innerHTML = '<p class="col-span-2 text-center text-gray-400 py-10 text-xs">لا توجد أي منتجات لعرضها حالياً.</p>';
+        return;
+      }
+
+      grid.innerHTML = products.map(p => `
+        <div onclick="openProductDetail(${p.id})" class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between cursor-pointer hover:shadow-md transition">
+          <img src="${p.image}" class="w-full h-28 object-cover rounded-xl mb-2 bg-gray-50">
+          <div>
+            <h3 class="font-bold text-sm text-gray-800">${p.name}</h3>
+            <p class="text-xs text-gray-500 mb-2 truncate">${p.desc}</p>
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-black text-emerald-600 text-xs">${p.price}</span>
+              <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md">${p.weight}</span>
+            </div>
+          </div>
+          <button onclick="event.stopPropagation(); openProductDetail(${p.id})" class="w-full bg-emerald-600 text-white py-1.5 rounded-xl font-bold text-xs shadow-sm hover:bg-emerald-700 transition">عرض التفاصيل</button>
+        </div>
+      `).join('');
+    }
+
+    function renderAdminList() {
+      const list = document.getElementById('adminProductsList');
+      
+      if (products.length === 0) {
+        list.innerHTML = '<p class="text-gray-400 text-xs text-center py-4">لم تقم بإضافة أي منتجات بعد.</p>';
+        return;
+      }
+
+      list.innerHTML = products.map(p => `
+        <div class="flex items-center justify-between bg-gray-50 p-2.5 rounded-xl border border-gray-200">
+          <div class="flex items-center gap-3">
+            <img src="${p.image}" class="w-10 h-10 object-cover rounded-lg">
+            <div>
+              <div class="font-bold text-xs text-gray-800">${p.name}</div>
+              <div class="text-[10px] text-gray-500">السعر: ${p.price} | الوزن: ${p.weight} (${p.unit})</div>
+            </div>
+          </div>
+          <button onclick="deleteProduct(${p.id})" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-red-200">حذف</button>
+        </div>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
