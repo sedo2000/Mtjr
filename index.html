@@ -6,16 +6,17 @@
   <title>متجر الفواكه والخضار</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- مكتبات فايربيس السحابية -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: 'Tajawal', sans-serif; background: #f4f6f8; }
   </style>
 </head>
 <body class="min-h-screen pb-20">
 
-  <!-- شريط التنقل العلوي (خالٍ تماماً للزوار، ويظهر فقط للمالك) -->
   <header class="bg-white shadow-sm sticky top-0 z-40 px-4 py-3 flex justify-between items-center">
     <div class="flex items-center gap-2">
-      <!-- رسمة SVG سلة الفاكهة -->
       <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M6 14L9 26H23L26 14H6Z" fill="#D97706" stroke="#B45309" stroke-width="1.5" stroke-linejoin="round"/>
         <path d="M8 18H24M10 22H22" stroke="#B45309" stroke-width="1" stroke-linecap="round"/>
@@ -27,33 +28,31 @@
       <h1 class="font-black text-xl text-emerald-600">سلة الفاكهة</h1>
     </div>
     
-    <!-- أزرار التحكم الخاصة بالمالك فقط -->
-    <div id="ownerControlsContainer" class="flex items-center gap-2">
-    </div>
+    <div id="ownerControlsContainer" class="flex items-center gap-2"></div>
   </header>
 
   <main class="max-w-md mx-auto p-4">
     <div class="mb-4">
-      <input type="text" placeholder="ابحث في المنتجات..." class="w-full p-3 bg-white rounded-xl shadow-sm border border-gray-200 outline-none focus:border-emerald-500 text-sm">
+      <input type="text" id="searchInput" placeholder="ابحث في المنتجات..." oninput="filterProducts()" class="w-full p-3 bg-white rounded-xl shadow-sm border border-gray-200 outline-none focus:border-emerald-500 text-sm">
     </div>
 
     <h2 class="font-black text-base mb-3 text-gray-800">قائمة المنتجات المتوفرة</h2>
     
     <div id="productsGrid" class="grid grid-cols-2 gap-3">
+      <p class="col-span-2 text-center text-gray-400 py-10 text-xs">جاري تحميل المنتجات من السحابة...</p>
     </div>
   </main>
 
   <!-- نافذة تفاصيل المنتج -->
-  <div id="productDetailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+  <div id="productDetailModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl p-5 relative shadow-2xl">
       <button onclick="closeProductDetail()" class="absolute top-3 left-3 text-gray-400 font-bold text-lg">✕</button>
-      <div id="detailContent">
-      </div>
+      <div id="detailContent"></div>
     </div>
   </div>
 
-  <!-- نافذة تسجيل الدخول المخفية (تفتح حصرياً عبر رابط الـ Admin السري) -->
-  <div id="loginModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+  <!-- نافذة تسجيل الدخول السري للمالك -->
+  <div id="loginModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 relative shadow-xl">
       <button onclick="closeLoginModal()" class="absolute top-4 left-4 text-gray-400 font-bold text-lg">✕</button>
       <h3 class="text-lg font-black mb-4 text-center text-gray-800">تسجيل دخول المالك</h3>
@@ -72,14 +71,14 @@
     </div>
   </div>
 
-  <!-- لوحة التحكم -->
-  <div id="adminPanelModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+  <!-- لوحة التحكم السحابية -->
+  <div id="adminPanelModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
     <div class="bg-white w-full max-w-lg rounded-2xl p-6 relative max-h-[90vh] overflow-y-auto shadow-2xl">
       <button onclick="toggleAdminPanel()" class="absolute top-4 left-4 text-gray-400 font-bold text-lg">✕</button>
-      <h3 class="text-xl font-black mb-4 text-emerald-600 border-b pb-2">لوحة التحكم وإدارة المنتجات</h3>
+      <h3 class="text-xl font-black mb-4 text-emerald-600 border-b pb-2">لوحة التحكم وإدارة المنتجات السحابية</h3>
 
       <div class="bg-emerald-50/60 p-4 rounded-xl mb-6 border border-emerald-100">
-        <h4 class="font-bold text-sm text-emerald-800 mb-3">➕ إضافة منتج جديد مع السعر والوزن</h4>
+        <h4 class="font-bold text-sm text-emerald-800 mb-3">➕ إضافة منتج جديد للجميع</h4>
         <div class="space-y-3">
           <input type="text" id="pName" placeholder="اسم المنتج (مثال: تفاح طازج)" class="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none">
           <input type="text" id="pDesc" placeholder="وصف المنتج (مثال: حلو ولذيذ درجة أولى)" class="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none">
@@ -96,13 +95,12 @@
             <input type="file" id="pImageFile" accept="image/*" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
           </div>
 
-          <button onclick="addNewProduct()" class="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-bold text-sm shadow">حفظ وإضافة المنتج للمتجر</button>
+          <button onclick="addNewProduct()" class="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-bold text-sm shadow">حفظ ورفع المنتج للسحابة</button>
         </div>
       </div>
 
-      <h4 class="font-bold text-sm text-gray-800 mb-2">📦 المنتجات الحالية في المتجر</h4>
-      <div id="adminProductsList" class="space-y-2">
-      </div>
+      <h4 class="font-bold text-sm text-gray-800 mb-2">📦 المنتجات السحابية الحالية</h4>
+      <div id="adminProductsList" class="space-y-2"></div>
       
       <div class="mt-6 pt-4 border-t flex justify-end">
         <button onclick="logoutAdmin()" class="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-xs font-bold">تسجيل خروج المدير</button>
@@ -111,16 +109,28 @@
   </div>
 
   <script>
-    let products = JSON.parse(localStorage.getItem('my_store_products')) || [];
+    // استخدام المتغيرات البيئية أو القيم الافتراضية
+    const firebaseConfig = {
+      apiKey: window.env?.FIREBASE_API_KEY || "PLACEHOLDER_API_KEY",
+      authDomain: window.env?.FIREBASE_AUTH_DOMAIN || "PLACEHOLDER_AUTH_DOMAIN",
+      projectId: window.env?.FIREBASE_PROJECT_ID || "PLACEHOLDER_PROJECT_ID",
+      storageBucket: window.env?.FIREBASE_STORAGE_BUCKET || "PLACEHOLDER_STORAGE_BUCKET",
+      messagingSenderId: window.env?.FIREBASE_MESSAGING_SENDER_ID || "PLACEHOLDER_SENDER_ID",
+      appId: window.env?.FIREBASE_APP_ID || "PLACEHOLDER_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let products = [];
     let isAdminLoggedIn = localStorage.getItem('is_admin_logged') === 'true';
 
     window.onload = function() {
       checkSecretAdminAccess();
       updateAuthUI();
-      renderStoreProducts();
+      fetchProductsFromCloud();
     };
 
-    // الطريقة الاحترافية المخفية تماماً: التحقق من الرابط السري (مثال: yoursite.com/#admin)
     function checkSecretAdminAccess() {
       if (window.location.hash === '#admin') {
         if (isAdminLoggedIn) {
@@ -131,11 +141,13 @@
       }
     }
 
-    function openLoginModal() { document.getElementById('loginModal').classList.add('flex'); document.getElementById('loginModal').classList.remove('hidden'); }
+    function openLoginModal() { 
+      const m = document.getElementById('loginModal');
+      m.classList.remove('hidden'); m.classList.add('flex'); 
+    }
     function closeLoginModal() { 
-      document.getElementById('loginModal').classList.remove('flex'); 
-      document.getElementById('loginModal').classList.add('hidden'); 
-      // إزالة الهاش من الرابط لتنظيفه
+      const m = document.getElementById('loginModal');
+      m.classList.remove('flex'); m.classList.add('hidden'); 
       if(window.location.hash === '#admin') {
         history.pushState("", document.title, window.location.pathname + window.location.search);
       }
@@ -162,14 +174,12 @@
       localStorage.removeItem('is_admin_logged');
       updateAuthUI();
       toggleAdminPanel();
-      // إزالة الهاش عند الخروج
       history.pushState("", document.title, window.location.pathname + window.location.search);
       alert('تم تسجيل الخروج من لوحة التحكم.');
     }
 
     function updateAuthUI() {
       const container = document.getElementById('ownerControlsContainer');
-
       if (isAdminLoggedIn) {
         container.innerHTML = `
           <button onclick="toggleAdminPanel()" class="bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-800 transition flex items-center gap-1">
@@ -190,11 +200,28 @@
         return;
       }
       const modal = document.getElementById('adminPanelModal');
-      modal.classList.toggle('hidden');
-      modal.classList.toggle('flex');
-      if (!modal.classList.contains('hidden')) {
+      const isHidden = modal.classList.contains('hidden');
+      if (isHidden) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
         renderAdminList();
+      } else {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
       }
+    }
+
+    function fetchProductsFromCloud() {
+      db.collection("products").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
+        products = [];
+        snapshot.forEach((doc) => {
+          products.push({ id: doc.id, ...doc.data() });
+        });
+        renderStoreProducts(products);
+        if(!document.getElementById('adminPanelModal').classList.contains('hidden')) {
+          renderAdminList();
+        }
+      });
     }
 
     function addNewProduct() {
@@ -213,46 +240,45 @@
       if (fileInput.files && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
-          saveNewProductData(name, desc, price, weight, unit, e.target.result);
+          saveToCloud(name, desc, price, weight, unit, e.target.result);
         };
         reader.readAsDataURL(fileInput.files[0]);
       } else {
-        saveNewProductData(name, desc, price, weight, unit, 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=400&q=80');
+        saveToCloud(name, desc, price, weight, unit, 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=400&q=80');
       }
     }
 
-    function saveNewProductData(name, desc, price, weight, unit, imageSrc) {
+    function saveToCloud(name, desc, price, weight, unit, imageSrc) {
       const newProduct = {
-        id: Date.now(),
         name,
         desc: desc || 'طازج وعالي الجودة',
         price,
         weight: weight || 'غير محدد',
         unit,
-        image: imageSrc
+        image: imageSrc,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
 
-      products.push(newProduct);
-      localStorage.setItem('my_store_products', JSON.stringify(products));
-      
-      document.getElementById('pName').value = '';
-      document.getElementById('pDesc').value = '';
-      document.getElementById('pPrice').value = '';
-      document.getElementById('pWeight').value = '';
-      document.getElementById('pUnit').value = '';
-      document.getElementById('pImageFile').value = '';
-
-      renderStoreProducts();
-      renderAdminList();
-      alert('تمت إضافة المنتج بنجاح إلى المتجر!');
+      db.collection("products").add(newProduct).then(() => {
+        document.getElementById('pName').value = '';
+        document.getElementById('pDesc').value = '';
+        document.getElementById('pPrice').value = '';
+        document.getElementById('pWeight').value = '';
+        document.getElementById('pUnit').value = '';
+        document.getElementById('pImageFile').value = '';
+        alert('تمت إضافة المنتج بنجاح ورفعه للسحابة للجميع!');
+      }).catch((error) => {
+        alert('حدث خطأ أثناء الحفظ: ' + error.message);
+      });
     }
 
     function deleteProduct(id) {
-      if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-        products = products.filter(p => p.id !== id);
-        localStorage.setItem('my_store_products', JSON.stringify(products));
-        renderStoreProducts();
-        renderAdminList();
+      if (confirm('هل أنت متأكد من حذف هذا المنتج من المتجر للجميع؟')) {
+        db.collection("products").doc(id).delete().then(() => {
+          alert('تم الحذف بنجاح.');
+        }).catch((error) => {
+          alert('خطأ في الحذف: ' + error.message);
+        });
       }
     }
 
@@ -284,25 +310,25 @@
         <button onclick="closeProductDetail(); alert('تمت إضافة المنتج إلى السلة');" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold text-sm shadow-sm hover:bg-emerald-700 transition">إضافة للسلة +</button>
       `;
 
-      document.getElementById('productDetailModal').classList.remove('hidden');
-      document.getElementById('productDetailModal').classList.add('flex');
+      const modal = document.getElementById('productDetailModal');
+      modal.classList.remove('hidden'); modal.classList.add('flex');
     }
 
     function closeProductDetail() {
-      document.getElementById('productDetailModal').classList.remove('flex');
-      document.getElementById('productDetailModal').classList.add('hidden');
+      const modal = document.getElementById('productDetailModal');
+      modal.classList.remove('flex'); modal.classList.add('hidden');
     }
 
-    function renderStoreProducts() {
+    function renderStoreProducts(listToRender) {
       const grid = document.getElementById('productsGrid');
       
-      if (products.length === 0) {
+      if (listToRender.length === 0) {
         grid.innerHTML = '<p class="col-span-2 text-center text-gray-400 py-10 text-xs">لا توجد أي منتجات لعرضها حالياً.</p>';
         return;
       }
 
-      grid.innerHTML = products.map(p => `
-        <div onclick="openProductDetail(${p.id})" class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between cursor-pointer hover:shadow-md transition">
+      grid.innerHTML = listToRender.map(p => `
+        <div onclick="openProductDetail('${p.id}')" class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between cursor-pointer hover:shadow-md transition">
           <img src="${p.image}" class="w-full h-28 object-cover rounded-xl mb-2 bg-gray-50">
           <div>
             <h3 class="font-bold text-sm text-gray-800">${p.name}</h3>
@@ -312,9 +338,15 @@
               <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md">${p.weight}</span>
             </div>
           </div>
-          <button onclick="event.stopPropagation(); openProductDetail(${p.id})" class="w-full bg-emerald-600 text-white py-1.5 rounded-xl font-bold text-xs shadow-sm hover:bg-emerald-700 transition">عرض التفاصيل</button>
+          <button onclick="event.stopPropagation(); openProductDetail('${p.id}')" class="w-full bg-emerald-600 text-white py-1.5 rounded-xl font-bold text-xs shadow-sm hover:bg-emerald-700 transition">عرض التفاصيل</button>
         </div>
       `).join('');
+    }
+
+    function filterProducts() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = products.filter(p => p.name.toLowerCase().includes(query) || p.desc.toLowerCase().includes(query));
+      renderStoreProducts(filtered);
     }
 
     function renderAdminList() {
@@ -334,7 +366,7 @@
               <div class="text-[10px] text-gray-500">السعر: ${p.price} | الوزن: ${p.weight} (${p.unit})</div>
             </div>
           </div>
-          <button onclick="deleteProduct(${p.id})" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-red-200">حذف</button>
+          <button onclick="deleteProduct('${p.id}')" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-red-200">حذف</button>
         </div>
       `).join('');
     }
